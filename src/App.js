@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import queryString from 'query-string';
 
 let defaultStyle = {
   color: '#fff'
@@ -21,56 +22,6 @@ let fakeServerData = {
             duration: 7000,
           }
         ]
-      },
-      {
-        name: 'Discover Weekly',
-        songs: [
-          {
-            name: 'Back to you',
-            duration: 7000,
-          },
-          {
-            name: 'Somebody',
-            duration: 7000,
-          }
-        ]
-      },
-      {
-        name: 'This is Queen',
-        songs: [
-          {
-            name: 'Radio Ga Ga',
-            duration: 7000,
-          },
-          {
-            name: 'Under Pressuer',
-            duration: 7000,
-          },
-          {
-            name: 'Friends Will Be Friends',
-            duration: 7000,
-          },
-          {
-            name: 'Let Me Live',
-            duration: 7000,
-          }
-        ]
-      },
-      {
-        name: '#Throwback Thursday',
-        songs: [
-          {
-            name: 'Crying In The Chapel',
-            duration: 7000,
-          },
-          {
-            name: 'Man In The Sky',
-            duration: 14500,
-          },
-          {
-            name: 'Peace In The Valley',
-            duration: 7000,
-          }]
       }
     ]
   }
@@ -120,7 +71,7 @@ class Playlist extends Component {
     let playlist = this.props.playlist;
     return (
       <div style={{...defaultStyle, width: '25%', display: 'inline-block'}}>
-        <img />
+        <img src={playlist.imageUrl} style={{width: '60px'}} />
         <h3>{playlist.name}</h3>
         <ul>
           {playlist.songs.map(song => <li>{song.name}</li>)}
@@ -141,32 +92,63 @@ class App extends Component {
   }
 
   componentDidMount() {
-    setTimeout(() => {
-      this.setState({serverData: fakeServerData});
-    }, 1000);
+    let parsed = queryString.parse(window.location.search);
+    let accesToken = parsed.access_token;
+
+    // get user profile
+    fetch('https://api.spotify.com/v1/me', {
+      headers: {
+        'Authorization': 'Bearer ' + accesToken
+      }
+    }).then(response => response.json())
+      .then(data => this.setState({
+          user: {
+            name: data.display_name
+          }
+      }));
+
+    // get user's playlists
+    fetch('https://api.spotify.com/v1/me/playlists', {
+      headers: {
+        'Authorization': 'Bearer ' + accesToken
+      }
+    }).then(response => response.json())
+      .then(data => {
+        this.setState({
+          playlists: data.items.map(item => ({
+            name: item.name,
+            imageUrl: item.images[0].url,
+            songs: []
+          }))
+        })
+      });
   }
 
   render() {
-    let playlistToRender = this.state.serverData.user ? this.state.serverData.user.playlists
-      .filter(playlist =>
-        playlist.name.toLowerCase().includes(this.state.filterString.toLowerCase())
-      ) : [];
+    let playlistToRender =
+      this.state.user &&
+      this.state.playlists
+        ? this.state.playlists.filter(playlist =>
+          playlist.name.toLowerCase().includes(this.state.filterString.toLowerCase()))
+        : [];
     return (
       <div className="App">
-        {this.state.serverData.user ?
+        {this.state.user ?
           <div>
-            <h1 style={{...defaultStyle, 'font-size': '54px'}}>
-              {this.state.serverData.user.name}'s Playlist
+            <h1 style={{...defaultStyle, 'fontSize': '54px'}}>
+              {this.state.user.name}'s Playlist
             </h1>
             <PlaylistCounter playlists={playlistToRender}/>
             <HoursCounter playlists={playlistToRender}/>
             <Filter onTextChange={text => this.setState({filterString: text})}/>
-            { playlistToRender.map(playlist =>
-                <Playlist playlist={playlist}/>
-              )
-            }
+            {playlistToRender.map(playlist =>
+              <Playlist playlist={playlist}/>
+            )}
           </div>
-          : <h1 style={defaultStyle}>Loading...</h1>
+          : <button onClick={()=>window.location.replace('http://localhost:8888/login')}
+              style={{padding: '20px', 'fontSize': '20px', 'marginTop': '20px'}}>
+              Sign in with Spotify
+          </button>
         }
       </div>
     );

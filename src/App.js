@@ -116,12 +116,34 @@ class App extends Component {
         'Authorization': 'Bearer ' + accesToken
       }
     }).then(response => response.json())
-      .then(data => {
+      .then(playlistData => {
+        let playlists = playlistData.items;
+        let trackDataPromises = playlists.map(playlist => {
+          let responsePromise = fetch(playlist.tracks.href, {
+            headers: {'Authorization': 'Bearer ' + accesToken}
+          });
+          return responsePromise.then(response => response.json());
+        });
+        let allTracksDataPromises = Promise.all(trackDataPromises);
+        return allTracksDataPromises
+          .then(trackDatas => {
+            trackDatas.forEach((trackData, i) => {
+              playlists[i].trackDatas = trackData.items
+                .map(item => item.track)
+                .map(trackData => ({
+                  name: trackData.name,
+                  duration: trackData.duration_ms / 1000
+                }))
+            });
+            return playlists;
+          });
+      })
+      .then(playlists => {
         this.setState({
-          playlists: data.items.map(item => ({
+          playlists: playlists.map(item => ({
             name: item.name,
             imageUrl: item.images[0].url,
-            songs: []
+            songs: item.trackDatas.slice(0,2)
           }))
         })
       });

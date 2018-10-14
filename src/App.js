@@ -95,6 +95,9 @@ class App extends Component {
     let parsed = queryString.parse(window.location.search);
     let accesToken = parsed.access_token;
 
+    if (!accesToken) {
+        return;
+    }
     // get user profile
     fetch('https://api.spotify.com/v1/me', {
       headers: {

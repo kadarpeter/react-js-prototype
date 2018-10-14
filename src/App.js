@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import 'reset-css/reset.css';
 import './App.css';
 import queryString from 'query-string';
 
@@ -6,31 +7,19 @@ let defaultStyle = {
   color: '#fff'
 };
 
-let fakeServerData = {
-  user: {
-    name: 'Peter',
-    playlists: [
-      {
-        name: 'My favorites',
-        songs: [
-          {
-            name: 'Summer of \'69',
-            duration: 7000,
-          },
-          {
-            name: 'Cuts Like a Knife',
-            duration: 7000,
-          }
-        ]
-      }
-    ]
-  }
+let counterStyle = {
+    ...defaultStyle,
+    width: '40%',
+    display: 'inline-block',
+    marginBottom: '20px',
+    fontSize: '20px',
+    lineHeight: '30px',
 };
 
 class PlaylistCounter extends Component {
   render() {
     return (
-      <div style={{...defaultStyle, width: '40%', display: 'inline-block'}}>
+      <div style={counterStyle}>
         <h2>{this.props.playlists.length} playlist</h2>
       </div>
     );
@@ -47,9 +36,17 @@ class HoursCounter extends Component {
       return sum + eachSong.duration;
     }, 0);
 
+    let totalDurationHours = Math.round(totalDuration/60);
+    let isToLow = totalDurationHours < 5;
+    let hoursCounterStyle = {
+        ...counterStyle,
+        color: isToLow ? 'red' : 'white',
+        fontWeight: isToLow ? '700' : '400'
+    };
+
     return (
-      <div style={{...defaultStyle, width: '40%', display: 'inline-block'}}>
-        <h2>{Math.round(totalDuration/60)} hours</h2>
+      <div style={hoursCounterStyle}>
+        <h2>{totalDurationHours} hours</h2>
       </div>
     );
   }
@@ -69,8 +66,14 @@ class Filter extends Component {
 class Playlist extends Component {
   render() {
     let playlist = this.props.playlist;
+    let index = this.props.index;
     return (
-      <div style={{...defaultStyle, width: '25%', display: 'inline-block'}}>
+      <div style={{
+          ...defaultStyle,
+          width: '25%',
+          display: 'inline-block',
+          backgroundColor: index % 2 ? 'inherit' : '#444'
+      }}>
         <img src={playlist.imageUrl} style={{width: '60px'}} />
         <h3>{playlist.name}</h3>
         <ul>
@@ -170,8 +173,8 @@ class App extends Component {
             <PlaylistCounter playlists={playlistToRender}/>
             <HoursCounter playlists={playlistToRender}/>
             <Filter onTextChange={text => this.setState({filterString: text})}/>
-            {playlistToRender.map(playlist =>
-              <Playlist playlist={playlist}/>
+            {playlistToRender.map((playlist, i) =>
+              <Playlist playlist={playlist} index={i}/>
             )}
           </div>
           : <button onClick={()=> {
